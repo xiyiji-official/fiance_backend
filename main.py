@@ -7,11 +7,12 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 import jwt
 from jwt import InvalidTokenError
 from sqlalchemy.orm import Session
+from sqladmin import Admin
 from typing import List, Annotated
 from passlib.context import CryptContext
 
 
-from sql_app import crud, models, schemas
+from sql_app import crud, models, schemas, AdminSchemas
 from sql_app.database import SessionLocal, engine
 
 from bs4 import BeautifulSoup
@@ -23,6 +24,11 @@ doc = DocxTemplate("./muban.docx")  ## 请修改为自己的模板路径
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+admin = Admin(
+    app, engine, authentication_backend=AdminSchemas.AdminAuth(secret_key="youcanuseit")
+)
+admin.add_view(AdminSchemas.UserAdmin)
+admin.add_view(AdminSchemas.BillAdmin)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")  # 定义OAuth2的认证方案
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -33,10 +39,10 @@ origins = [
 ]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173"],  # 允许的源，根据你的前端应用地址调整
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # 允许所有方法
+    allow_headers=["*"],  # 允许所有头
 )
 
 
@@ -56,23 +62,33 @@ def get_db():
 async def get_current_user(
     token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
 ):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="无法验证凭据",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+    """
+    获取当前用户
+    """
     try:
         payload = jwt.decode(token, crud.SECRET_KEY, algorithms=[crud.ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
-            raise credentials_exception
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="无法验证凭据",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
         token_data = schemas.TokenData(username=username)
     except InvalidTokenError:
-        raise credentials_exception
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="无法验证凭据",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     user = crud.authenticate_user(db, name=token_data.username)
-    if not user:
-        raise credentials_exception
-    return user
+    if not user["status"]:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=user["message"],
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return user["user"]
 
 
 async def get_current_active_user(
@@ -104,12 +120,13 @@ async def login_for_access_token(
             detail=f"验证错误: {e}",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    if not user:
+    if not user["status"]:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="错误的用户名或密码",
+            detail=user["message"],
             headers={"WWW-Authenticate": "Bearer"},
         )
+    user = user["user"]
     access_token_expires = timedelta(minutes=crud.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = crud.create_access_token(
         data={"sub": user.name}, expires_delta=access_token_expires

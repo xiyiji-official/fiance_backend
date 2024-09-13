@@ -33,6 +33,7 @@ class Bill(BillBase):
 
 class UserBase(BaseModel):
     name: str
+    nickname: str
     email: str
     is_active: bool
 

@@ -5,3 +5,5 @@ __pycache__
 *.json
 /sql_app/__pycache__
 *.docx
+alembic
+alembic.ini

@@ -1,9 +1,8 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import extract
 import jwt
-from jwt.exceptions import InvalidTokenError
 from . import models, schemas
-from typing import List, Optional, Annotated, Union
+from typing import Union
 from datetime import datetime, timedelta, timezone
 from passlib.context import CryptContext
 
@@ -38,19 +37,22 @@ def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None
 def authenticate_user(db: Session, name: str, hashed_password: str = None):
     user = db.query(models.User).filter(models.User.name == name).first()
     if not user:
-        return False
+        return {"status": False, "message": "用户不存在"}
     if hashed_password is not None:
         print(f"Hashed Password: {hashed_password}")
         print(f"User Password: {user.hashed_password}")
         if not verify_password(hashed_password, user.hashed_password):
-            return False
-    return user
+            return {"status": False, "message": "密码错误"}
+    if not user.is_active:
+        return {"status": False, "message": "用户未激活"}
+    return {"status": True, "message": "登录成功", "user": user}
 
 
 
 def create_user(db: Session, user: schemas.UserCreate):
     db_user = models.User(
         name=user.name,
+        nickname=user.nickname,
         email=user.email,
         hashed_password=get_password_hash(user.hashed_password),  # 使用哈希后的密码
         is_active=user.is_active,
