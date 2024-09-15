@@ -36,10 +36,11 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 origins = [
     "http://localhost",
     "http://localhost:8000",
+    "http://154.8.202.195:8000",
 ]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # 允许的源，根据你的前端应用地址调整
+    allow_origins=["*"],  # 允许的源，根据你的前端应用地址调整
     allow_credentials=True,
     allow_methods=["*"],  # 允许所有方法
     allow_headers=["*"],  # 允许所有头

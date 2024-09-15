@@ -80,7 +80,7 @@ class AdminAuth(AuthenticationBackend):
         form = await request.form()
         username, password = form["username"], form["password"]
         result = crud.authenticate_user(db=db, name=username, hashed_password=password)
-        if not result:
+        if not result["status"]:
             db.close()
             return False
         request.session.update({"token": "youcanuseit"})

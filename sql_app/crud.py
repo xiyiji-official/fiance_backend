@@ -23,6 +23,7 @@ def get_password_hash(password):
     """获取hash后的密码"""
     return pwd_context.hash(password)
 
+
 def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None):
     to_encode = data.copy()
     if expires_delta:
@@ -44,9 +45,9 @@ def authenticate_user(db: Session, name: str, hashed_password: str = None):
         if not verify_password(hashed_password, user.hashed_password):
             return {"status": False, "message": "密码错误"}
     if not user.is_active:
+        print(user.is_active)
         return {"status": False, "message": "用户未激活"}
     return {"status": True, "message": "登录成功", "user": user}
-
 
 
 def create_user(db: Session, user: schemas.UserCreate):

@@ -14,7 +14,7 @@ class User(Base):
     nickname = Column(String)
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
-    is_active = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True)
 
     bills = relationship("Bill", back_populates="user")  # 添加与Bill的关系
 
