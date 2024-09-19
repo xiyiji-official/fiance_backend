@@ -1,8 +1,6 @@
-# 项目名称
+# Fiance_backend
 
 这是一个基于 FastAPI 的账单管理系统，支持用户注册、登录、账单创建、查询和管理等功能。
-
-本README.md由Claude 3.5 Sonnet生成。
 
 ## 技术栈
 
@@ -15,15 +13,27 @@
 - BeautifulSoup
 - DocxTemplate
 
-## 启动
+## 安装和使用
 
-使用以下命令启动应用：
+1. 克隆仓库:
+   ```bash
+   git clone https://github.com/your-username/Fiance_backend.git
+   cd Fiance_backend
+   ```
 
-```bash
-uvicorn main:app --reload
-```
+2. 安装依赖:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-## API
+3. 启动应用:
+   ```bash
+   uvicorn main:app --reload
+   ```
+
+4. 访问 API 文档: 打开浏览器并访问 `http://localhost:8000/docs`
+
+## API 概览
 
 ### 用户相关
 
@@ -66,7 +76,7 @@ uvicorn main:app --reload
   - `DELETE /bills/{bill_id}`
   - 响应：`Bill` 模型
 
-- **获取当前用户的账单**
+- **获取当前用户的月度账单**
   - `GET /current_users/month_bills/`
   - 查询参数：`month` (1-12)
   - 响应：`List[Bill]`
@@ -88,23 +98,32 @@ uvicorn main:app --reload
   - 请求体：`dict`
   - 响应：生成的 Docx 文件
 
+### 其他API
+
+- **读取参考资料**
+  - `GET /reference/`
+  - 查询参数：`weekday` (可选)
+  - 响应：参考资料内容
+
+- **合并文件**
+  - `POST /mergefiles/`
+  - 请求体：文件列表和文件顺序
+  - 响应：合并后的文件信息
+
 ## 数据库
 
-使用 SQLite 数据库，数据库文件为 `sql_app.db`。可以根据需要修改数据库连接字符串。
+项目使用 SQLite 数据库，数据库文件为 `sql_app.db`。如需修改数据库配置，请更新 `database.py` 文件中的连接字符串。
 
-## 依赖安装
+## 贡献指南
 
-使用以下命令安装项目依赖：
+欢迎贡献代码、报告问题或提出新功能建议。请遵循以下步骤：
 
-```bash
-pip install -r requirements.txt
-```
-
-
-## 贡献
-
-欢迎任何形式的贡献！请提交问题或拉取请求。
+1. Fork 本仓库
+2. 创建您的特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交您的更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启一个 Pull Request
 
 ## 许可证
 
-本项目采用 MIT 许可证，详细信息请查看 LICENSE 文件。
+本项目采用 MIT 许可证。详细信息请查看 [LICENSE](LICENSE) 文件。
