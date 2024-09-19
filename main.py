@@ -1,6 +1,16 @@
 from datetime import timedelta
 import json
-from fastapi import FastAPI, Depends, HTTPException, Query, status
+import os
+from fastapi import (
+    FastAPI,
+    Depends,
+    HTTPException,
+    Query,
+    status,
+    UploadFile,
+    File,
+    Form,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -417,3 +427,21 @@ def renderDocx(item: dict):
     doc.render(item)
     doc.save("result.docx")
     return FileResponse("result.docx")
+
+
+@app.post("/mergefiles/")
+async def mergefiles(files: List[UploadFile] = File(...), fileOrder: str = Form(...)):
+    # 解析文件顺序
+    fileOrder = json.loads(fileOrder)
+
+    temp_dir = "temo_files"
+    os.makedirs(temp_dir, exist_ok=True)
+
+    saved_files = []
+    for file in files:
+        file_path = os.path.join(temp_dir, file.filename)
+        with open(file_path, "wb") as buffer:
+            buffer.write(await file.read())
+        saved_files.append(file_path)
+
+    return {"message": fileOrder}
