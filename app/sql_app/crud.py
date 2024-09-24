@@ -5,11 +5,12 @@ from . import models, schemas
 from typing import Union
 from datetime import datetime, timedelta, timezone
 from passlib.context import CryptContext
+from ..setting import settings
 
 # openssl rand -hex 32
-SECRET_KEY = "047809efa50356f0eab5db18511142382390d4718b1505e591728dc43004ac29"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+SECRET_KEY = settings.secret_key
+ALGORITHM = settings.algorithm
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -40,12 +41,9 @@ def authenticate_user(db: Session, name: str, hashed_password: str = None):
     if not user:
         return {"status": False, "message": "用户不存在"}
     if hashed_password is not None:
-        print(f"Hashed Password: {hashed_password}")
-        print(f"User Password: {user.hashed_password}")
         if not verify_password(hashed_password, user.hashed_password):
             return {"status": False, "message": "密码错误"}
     if not user.is_active:
-        print(user.is_active)
         return {"status": False, "message": "用户未激活"}
     return {"status": True, "message": "登录成功", "user": user}
 

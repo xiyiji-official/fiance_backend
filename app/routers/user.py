@@ -1,14 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
-from dependencies import get_current_active_user, get_db
+from app.dependencies import get_current_active_user, get_db
 
 from sqlalchemy.orm import Session
-from sql_app import crud, schemas
+from app.sql_app import crud, schemas
 
 from typing import Annotated, List
 
-router = APIRouter(
-    tags=["用户相关"]
-)
+router = APIRouter(tags=["用户相关"])
+
 
 @router.get("/current_users/short_info", response_model=schemas.UserBase)
 async def read_users_me(
@@ -18,24 +17,6 @@ async def read_users_me(
     获取当前活跃用户
     """
     return current_user
-
-@router.get("/users/all_info", response_model=List[schemas.User])
-def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    """
-    读取用户列表
-
-    此函数用于从数据库中读取用户列表。
-
-    参数:
-    - skip (int): 跳过前多少个用户，默认为0。
-    - limit (int): 限制返回的用户数量，默认为100。
-    - db (Session): 数据库会话对象，由FastAPI的依赖注入系统提供。
-
-    返回:
-    - List[schemas.User]: 返回用户列表。
-    """
-    users = crud.get_users(db, skip=skip, limit=limit)
-    return users
 
 
 @router.get("/current_users/long_info", response_model=schemas.User)
@@ -63,3 +44,22 @@ def read_user(
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return db_user
+
+
+@router.get("/users/all_info", response_model=List[schemas.User])
+def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    """
+    读取用户列表
+
+    此函数用于从数据库中读取用户列表。
+
+    参数:
+    - skip (int): 跳过前多少个用户，默认为0。
+    - limit (int): 限制返回的用户数量，默认为100。
+    - db (Session): 数据库会话对象，由FastAPI的依赖注入系统提供。
+
+    返回:
+    - List[schemas.User]: 返回用户列表。
+    """
+    users = crud.get_users(db, skip=skip, limit=limit)
+    return users

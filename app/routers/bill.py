@@ -1,14 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from dependencies import get_current_active_user, get_db
+from app.dependencies import get_current_active_user, get_db
 
 from sqlalchemy.orm import Session
-from sql_app import crud, schemas
+from app.sql_app import crud, schemas
 
 from typing import Annotated, List
 
-router = APIRouter(
-    tags=["账单相关"]
-)
+router = APIRouter(tags=["账单相关"])
+
 
 @router.post("/current_users/add_bills/", response_model=schemas.Bill)
 def create_bill_for_user(
@@ -32,6 +31,28 @@ def create_bill_for_user(
     - HTTPException: 如果用户不存在，则抛出状态码为404的HTTP异常。
     """
     return crud.create_bill(db=db, bill=bill, user_id=current_user.user_id)
+
+
+@router.get("/current_users/month_bills/", response_model=List[schemas.Bill])
+def get_user_bills(
+    current_user: Annotated[schemas.User, Depends(get_current_active_user)],
+    month: int = Query(..., description="Month (1-12)"),
+    db: Session = Depends(get_db),
+):
+    """
+    按月获取当前用户的账单
+
+    此函数用于获取当前用户的某一月的账单。
+
+    参数:
+    - user_id (int): 用户ID。
+    - month (int): 月份。
+    - db (Session): 数据库会话对象，由FastAPI的依赖注入系统提供。
+    """
+    bills = crud.get_user_bills(db, user_id=current_user.id, month=month)
+    if bills is None or len(bills) == 0:
+        raise HTTPException(status_code=404, detail="本月无账单明细内容。")
+    return bills
 
 
 @router.get("/bills/", response_model=List[schemas.Bill])
@@ -120,25 +141,3 @@ def delete_bill(bill_id: int, db: Session = Depends(get_db)):
     if db_bill is None:
         raise HTTPException(status_code=404, detail="Bill not found")
     return db_bill
-
-
-@router.get("/current_users/month_bills/", response_model=List[schemas.Bill])
-def get_user_bills(
-    current_user: Annotated[schemas.User, Depends(get_current_active_user)],
-    month: int = Query(..., description="Month (1-12)"),
-    db: Session = Depends(get_db),
-):
-    """
-    按月获取当前用户的账单
-
-    此函数用于获取当前用户的某一月的账单。
-
-    参数:
-    - user_id (int): 用户ID。
-    - month (int): 月份。
-    - db (Session): 数据库会话对象，由FastAPI的依赖注入系统提供。
-    """
-    bills = crud.get_user_bills(db, user_id=current_user.id, month=month)
-    if bills is None or len(bills) == 0:
-        raise HTTPException(status_code=404, detail="本月无账单明细内容。")
-    return bills

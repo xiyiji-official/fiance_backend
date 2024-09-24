@@ -1,9 +1,9 @@
 from sqladmin import ModelView
 from sqladmin.authentication import AuthenticationBackend
-from sql_app import crud
-from sql_app.models import User, Bill
+from app.sql_app import crud
+from app.sql_app.models import User, Bill
 from fastapi import Request
-from sql_app.database import SessionLocal
+from app.sql_app.database import SessionLocal
 
 
 class UserAdmin(ModelView, model=User):

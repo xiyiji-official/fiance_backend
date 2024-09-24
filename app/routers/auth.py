@@ -4,9 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
-from sql_app import crud, schemas
+from app.sql_app import crud, schemas
 
-from dependencies import get_db
+from app.dependencies import get_db
 
 router = APIRouter(
     tags=["登录注册"],

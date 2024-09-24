@@ -1,4 +1,3 @@
-from datetime import timedelta
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 import jwt
@@ -6,11 +5,12 @@ from jwt import InvalidTokenError
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 
-from sql_app import crud, schemas
-from sql_app.database import SessionLocal
+from app.sql_app import crud, schemas
+from app.sql_app.database import SessionLocal
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 
 def get_db():
     db = SessionLocal()
@@ -19,9 +19,9 @@ def get_db():
     finally:
         db.close()
 
+
 async def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    db: Session = Depends(get_db)
+    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
 ):
     try:
         payload = jwt.decode(token, crud.SECRET_KEY, algorithms=[crud.ALGORITHM])
@@ -47,6 +47,7 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     return user["user"]
+
 
 async def get_current_active_user(
     current_user: schemas.UserBase = Depends(get_current_user),

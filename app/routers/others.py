@@ -1,28 +1,32 @@
-from fastapi import APIRouter, File, UploadFile, Form
+from pathlib import Path
+from fastapi import APIRouter, File, HTTPException, UploadFile, Form, Query
 from fastapi.responses import FileResponse
+
+from app.setting import settings
 
 from typing import List
 
 import os
+import shutil
 import json
 import uuid
+import requests
 from bs4 import BeautifulSoup
 from docxtpl import DocxTemplate
 
+
 ## 引用模板，用于生成docx文件
-doc = DocxTemplate("./muban.docx")  ## 请修改为自己的模板路径
+doc = DocxTemplate(settings.template)  ## 请修改为自己的模板路径
 
 ## 模板内容，请更新为您的模板内容
 models: str = "{time}&emsp;&emsp;&emsp;{name}<br/>会议负责人：<br/>会议分类：<br/>关注内容：<br/><br/>{url}<br/>"
 
-router = APIRouter(
-    tags=["其他API"]
-)
+router = APIRouter(tags=["其他API"])
 
 
 @router.get("/reference/")
 def read_reference(weekday: str | None = None):
-    f = open("config.json", "r", encoding="UTF-8")
+    f = open(settings.config, "r", encoding="UTF-8")
     config = json.load(f)
     if weekday is not None:
         for i in config["reference"]:
@@ -84,18 +88,44 @@ def renderDocx(item: dict):
 
 @router.post("/mergefiles/")
 async def mergefiles(files: List[UploadFile] = File(...), fileOrder: str = Form(...)):
+    file_dir = (
+        Path(__file__).resolve().parent.parent
+    )  ## XXX: 不知道为什么不能修改为settings.current_dir
     # 解析文件顺序
     fileOrder = json.loads(fileOrder)
 
-
     temp_dir = str(uuid.uuid4())
-    os.makedirs(temp_dir, exist_ok=True)
+    temp_path = file_dir.joinpath(temp_dir)
+    os.makedirs(temp_path, exist_ok=True)
 
     saved_files = []
     for file in files:
-        file_path = os.path.join(temp_dir, file.filename)
+        file_path = os.path.join(temp_path, file.filename)
+        print(file_path)
         with open(file_path, "wb") as buffer:
             buffer.write(await file.read())
-        saved_files.append(file_path)
+        saved_files.append(str(file_path))
+    url = "http://localhost:5000/Merge"
+    data = {
+        "pathList": saved_files,
+        "additionalString": str(file_dir.joinpath(f"output/{temp_dir}.pptx")),
+    }
+    response = requests.post(url, json=data)
+    if response.status_code == 200:
+        if temp_path.exists():
+            shutil.rmtree(temp_path)
+        return response.json()
+    else:
+        return HTTPException(status_code=400, detail="合并失败")
 
-    return {"message": fileOrder}
+
+@router.get("/download_pptx/")
+async def download_pptx(file_path: str = Query(..., description="PPTX文件的绝对路径")):
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="文件不存在")
+
+    return FileResponse(
+        file_path,
+        media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        filename=os.path.basename(file_path),
+    )
