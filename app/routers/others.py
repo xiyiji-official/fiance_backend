@@ -13,7 +13,7 @@ import uuid
 import requests
 from bs4 import BeautifulSoup
 from docxtpl import DocxTemplate
-
+from app.handler.pdfmarks import pdf_marks
 
 ## 引用模板，用于生成docx文件
 doc = DocxTemplate(settings.template)  ## 请修改为自己的模板路径
@@ -101,7 +101,6 @@ async def mergefiles(files: List[UploadFile] = File(...), fileOrder: str = Form(
     saved_files = []
     for file in files:
         file_path = os.path.join(temp_path, file.filename)
-        print(file_path)
         with open(file_path, "wb") as buffer:
             buffer.write(await file.read())
         saved_files.append(str(file_path))
@@ -117,6 +116,32 @@ async def mergefiles(files: List[UploadFile] = File(...), fileOrder: str = Form(
         return response.json()
     else:
         return HTTPException(status_code=400, detail="合并失败")
+
+@router.post("/pdfmarks/")
+async def pdfmarks(files: UploadFile = File(...), fileOrder: str = Form(...)):
+    # 获取original文件夹的路径
+    original_dir = Path(__file__).parent.parent / "handler" / "original"
+
+    # 获取文件
+    file_name = files.filename
+    file_path = os.path.join(original_dir, file_name)
+
+    # 保存上传的文件
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(files.file, buffer)
+    print(file_path)
+
+    # 获取姓名列表
+    name_list = fileOrder
+
+    # 调用pdf_marks函数批量添加水印
+    try:
+        zip_path = pdf_marks(file_path, file_name, name_list)
+        print(zip_path)
+        return {"message": "success", "path": zip_path}
+    except Exception as e:
+        # 返回错误响应
+        raise HTTPException(status_code=500, detail=f"Error processing file: {e}")
 
 
 @router.get("/download_pptx/")
