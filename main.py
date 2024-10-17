@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
+import logging
+from app.logger import main_logger
 
 from sqladmin import Admin
 from passlib.context import CryptContext
@@ -46,6 +48,8 @@ uvicorn main:app --reload
     version="0.0.3",
 )
 
+main_logger.info("FastAPI application initialized")
+
 origins = settings.origins
 app.add_middleware(
     CORSMiddleware,
@@ -70,3 +74,7 @@ app.include_router(auth_router)
 app.include_router(user_router)
 app.include_router(bill_router)
 app.include_router(others_router)
+
+# 配置Uvicorn的日志
+uvicorn_logger = logging.getLogger("uvicorn")
+uvicorn_logger.handlers = main_logger.handlers
