@@ -1,0 +1,14 @@
+[Unit]
+Description=fastapi@server
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/home/API/fiance_backend/run.sh
+WorkingDirectory=/home/API/fiance_backend
+Restart=always
+RestartSec=3
+User=root
+
+[Install]
+WantedBy=multi-user.target
